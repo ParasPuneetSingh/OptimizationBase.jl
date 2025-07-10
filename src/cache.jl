@@ -57,12 +57,24 @@ function OptimizationCache(prob::SciMLBase.OptimizationProblem, opt;
         an explicit `SecondOrder` ADtype is recommended."
     end
 
-    f = OptimizationBase.instantiate_function(
-        prob.f, reinit_cache, prob.f.adtype, num_cons;
-        g = SciMLBase.requiresgradient(opt), h = SciMLBase.requireshessian(opt),
-        hv = SciMLBase.requireshessian(opt), fg = SciMLBase.allowsfg(opt),
-        fgh = SciMLBase.allowsfgh(opt), cons_j = SciMLBase.requiresconsjac(opt), cons_h = SciMLBase.requiresconshess(opt),
-        cons_vjp = SciMLBase.allowsconsjvp(opt), cons_jvp = SciMLBase.allowsconsjvp(opt), lag_h = SciMLBase.requireslagh(opt))
+
+    # Handle MultiObjectiveOptimizationFunction: pass cost_prototype and coalesce if needed
+    if isa(prob.f, SciMLBase.MultiObjectiveOptimizationFunction)
+        f = OptimizationBase.instantiate_function(
+            prob.f, reinit_cache, prob.f.adtype, num_cons;
+            g = SciMLBase.requiresgradient(opt), h = SciMLBase.requireshessian(opt),
+            hv = SciMLBase.requireshessian(opt), fg = SciMLBase.allowsfg(opt),
+            fgh = SciMLBase.allowsfgh(opt), cons_j = SciMLBase.requiresconsjac(opt), cons_h = SciMLBase.requiresconshess(opt),
+            cons_vjp = SciMLBase.allowsconsjvp(opt), cons_jvp = SciMLBase.allowsconsjvp(opt), lag_h = SciMLBase.requireslagh(opt),
+            cost_prototype = prob.f.cost_prototype, coalesce = prob.f.coalesce)
+    else
+        f = OptimizationBase.instantiate_function(
+            prob.f, reinit_cache, prob.f.adtype, num_cons;
+            g = SciMLBase.requiresgradient(opt), h = SciMLBase.requireshessian(opt),
+            hv = SciMLBase.requireshessian(opt), fg = SciMLBase.allowsfg(opt),
+            fgh = SciMLBase.allowsfgh(opt), cons_j = SciMLBase.requiresconsjac(opt), cons_h = SciMLBase.requiresconshess(opt),
+            cons_vjp = SciMLBase.allowsconsjvp(opt), cons_jvp = SciMLBase.allowsconsjvp(opt), lag_h = SciMLBase.requireslagh(opt))
+    end
 
     if structural_analysis
         obj_res, cons_res = symify_cache(f, prob, num_cons, manifold)
